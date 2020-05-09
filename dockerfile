@@ -3,7 +3,7 @@ WORKDIR /home/opam/
 
 LABEL maintainer="jormal <jormal@korea.ac.kr>"
 LABEL name="ir-translator"
-LABEL version="1.0.0"
+LABEL version="1.1.0"
 
 # Install Dependencies
 RUN sudo apt-get -y -qq update
