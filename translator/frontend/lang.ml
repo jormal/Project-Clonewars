@@ -23,7 +23,7 @@ module Node = struct
 
   let hash = Hashtbl.hash
 
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 
   let entry = ENTRY
   let exit = EXIT
@@ -787,7 +787,7 @@ and to_string_bop bop =
   | GEq -> ">=" | Gt -> ">"  
   | LEq -> "<=" | Lt -> "<"
   | LAnd -> "&&" | LOr -> "||"
-  | Eq -> "==" | NEq -> "!="
+  | Eq -> "=" | NEq -> "!="
   | ShiftL -> "<<" | ShiftR -> ">>" 
   | BXor -> "^" | BAnd -> "&" 
   | BOr -> "|"
@@ -870,7 +870,8 @@ let rec to_string_stmt ?(report=false) stmt =
     "assembly" ^ string_of_list ~first:"{" ~last:"}" ~sep:", " (fst|>id) lst ^ ";"
 
 let rec to_string_func (id,params,ret_params,stmt,finfo) =
-  "function" ^ " " ^ id ^ " " ^ (string_of_list ~first:"(" ~last:")" ~sep:", " to_string_param params) ^
+  let func_name = id in
+  "function" ^ " " ^ func_name ^ " " ^ (string_of_list ~first:"(" ~last:")" ~sep:", " to_string_param params) ^
   " " ^ "returns" ^ " " ^ (string_of_list ~first:"(" ~last:")" ~sep:", " to_string_param ret_params) ^
   " " ^ to_string_vis finfo.fvis ^ " " ^ "{" ^ "\n" ^
   "    " ^ to_string_stmt stmt ^ "\n" ^ "  " ^ "}" ^ "\n"
@@ -887,7 +888,7 @@ and to_string_vis vis =
 let to_string_state_var_decl decl =
   match decl with
   | (id,None,vinfo) -> to_string_typ vinfo.vtype ^ " " ^ id ^ ";"
-  | (id,Some e,vinfo) -> to_string_typ vinfo.vtype ^ " " ^ id ^ " = " ^ to_string_exp e ^ ";" 
+  | (id,Some e,vinfo) -> to_string_typ vinfo.vtype ^ " " ^ id ^ " = " ^ to_string_exp e ^ ";"
 
 let to_string_var_decl = to_string_param
 

@@ -578,7 +578,10 @@ let param_cnt = ref 0
 let param_name = "Param"
 let gen_param_name () =
   param_cnt:=!param_cnt+1;
-  param_name ^ (string_of_int !param_cnt) 
+  if !Options.rm_index then
+    param_name
+  else
+    param_name ^ (string_of_int !param_cnt)
 
 (* nodeType: O *)
 let trans_parameterList : Yojson.Basic.t -> param list
@@ -605,7 +608,7 @@ let trans_inheritanceSpecifier : Yojson.Basic.t -> stmt
 let get_callee_name : stmt -> string
 = fun stmt ->
   match stmt with
-  | Call (_, Lv (Var (name,_)),_,_,_) -> name
+  | Call (_, Lv (lv),_,_,_) -> Lang.to_string_lv lv
   | _ -> raise (Failure "get_callee_name")
 
 let resolve_cnstr_calls : stmt list -> stmt list -> stmt

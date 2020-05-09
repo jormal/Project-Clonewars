@@ -52,7 +52,10 @@ let tmpvar = "Tmp"
 
 let gen_tmpvar ?(org="") typ = 
   tmpvar_cnt:=!tmpvar_cnt+1;
-  Var (tmpvar^(string_of_int !tmpvar_cnt), dummy_vinfo_with_typ_org typ org)
+  if !Options.rm_index then
+    Var (tmpvar, dummy_vinfo_with_typ_org typ org)
+  else
+    Var (tmpvar^(string_of_int !tmpvar_cnt), dummy_vinfo_with_typ_org typ org)
 
 let rec is_member : exp -> bool
 = fun e ->
@@ -810,6 +813,7 @@ let add_ret_init : pgm -> pgm
 let should_not_be_renamed (id,vinfo) =
   BatString.starts_with id tmpvar
   || vinfo.refid = -1 (* some built-in variables do not have reference id, thus we assign '-1' *)
+  || !Options.rm_index
 
 let rec rename_lv enums lv =
   match lv with
@@ -889,10 +893,10 @@ let rec rename_s cnames enums stmt =
   | Assume (e,loc) -> Assume (rename_e enums e, loc)
   | Assert (e,loc) -> Assert (rename_e enums e, loc)
   | Assembly (lst,loc) ->
-    Assembly (List.map (fun (x,refid) -> (x ^ separator ^ string_of_int refid, refid)) lst, loc)
+    Assembly (List.map (fun (x,refid) -> if !Options.rm_index then (x, refid) else (x ^ separator ^ string_of_int refid, refid)) lst, loc)
 
 let rename_param (id,vinfo) =
-  if BatString.starts_with id Translator.param_name then (id,vinfo)
+  if BatString.starts_with id Translator.param_name || !Options.rm_index then (id,vinfo)
   else (id ^ separator ^ string_of_int vinfo.refid, vinfo)
 
 let rename_f cnames enums (fid, params, ret_params, stmt, finfo) =
@@ -900,12 +904,12 @@ let rename_f cnames enums (fid, params, ret_params, stmt, finfo) =
 
 let rename_d decl =
   match decl with
-  | (id,None,vinfo) -> (id ^ separator ^ string_of_int vinfo.refid, None, vinfo) 
+  | (id,None,vinfo) -> if !Options.rm_index then (id, None, vinfo) else (id ^ separator ^ string_of_int vinfo.refid, None, vinfo) 
   | (id,Some e,vinfo) -> (* Note: we do not care about exp in rhs (hence are not renamed). They are assigned in consturctors *) 
-    (id ^ separator ^ string_of_int vinfo.refid, Some e, vinfo)
+    if !Options.rm_index then (id, Some e, vinfo) else (id ^ separator ^ string_of_int vinfo.refid, Some e, vinfo)
 
 let rename_st (sname, members) =
-  let members' = List.map (fun (v,vinfo) -> (v ^ separator ^ string_of_int vinfo.refid, vinfo)) members in
+  let members' = List.map (fun (v,vinfo) -> if !Options.rm_index then (v, vinfo) else (v ^ separator ^ string_of_int vinfo.refid, vinfo)) members in
   (sname, members')
 
 let rename_c cnames (cid, decls, structs, enums, funcs, cinfo) =
