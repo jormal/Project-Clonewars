@@ -1,6 +1,7 @@
 open Lang
 open Vocab
 open FuncMap
+open Options
 
 let compute_call_edges_n : id list -> FuncMap.t -> Node.t -> cfg -> (fkey * fkey) BatSet.t
 = fun cnames fmap n g ->
@@ -78,12 +79,13 @@ let rm_unreach_c : fkey BatSet.t -> contract -> contract
 
 let remove_unreachable_funcs : pgm -> pgm
 = fun p ->
-  let cnames = get_cnames p in
+  let cnames = Lang.get_cnames p in
   let fmap = FuncMap.mk_fmap p in
   let all = get_all_fkeys p in
   let reachable = compute_reachable_funcs cnames fmap p in
   let p' = List.map (rm_unreach_c reachable) p in
-  prerr_endline ("# all funcs : " ^ string_of_int (BatSet.cardinal all));
-  prerr_endline ("# reachable : " ^ string_of_int (BatSet.cardinal reachable));
-  prerr_endline (string_of_set to_string_fkey ~sep:", " reachable);
+  print_endline ("> callGraph - # of all functions       : " ^ string_of_int (BatSet.cardinal all));
+  print_endline ("> callGraph - # of reachable functions : " ^ string_of_int (BatSet.cardinal reachable));
+  if !Options.verbose then
+    print_endline (string_of_set to_string_fkey ~sep:", " reachable);
   p'

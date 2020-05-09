@@ -159,10 +159,9 @@ let inline_n : var list -> id list -> FuncMap.t -> func -> Node.t -> cfg ->
         if is_skip_node n g || is_exception_node n g then acc
         else acc+1
       ) g 0 in
-    let _ = if !Options.debug = "inline" then print_endline (get_fname callee ^ ", " ^ string_of_int (size_of (get_cfg callee))) in
     let excessive = size_of (get_cfg callee) > 20 || has_loop (get_cfg callee) in
-    if not !Options.exploit && excessive then (false, g)
-    else
+      if excessive then (false, g)
+      else
       (* Do inlining, if exploit mode or not excessive *)
       let _ = update_inline_cnt () in
       let (callee_e, callee_x, callee_g) = mk_cfg_copy callee gvars cnames (get_cfg callee) in
@@ -230,7 +229,7 @@ let inline_p : pgm -> bool * pgm
 = fun p ->
   let gvars = get_gvars p in
   let fmap = FuncMap.mk_fmap p in
-  let cnames = get_cnames p in
+  let cnames = Lang.get_cnames p in
   List.fold_left (fun (acc_changed, acc_p) c ->
     let (changed', c') =
       if BatString.equal (get_cname c) !Options.main_contract (* currently, inline only functions within main contract *)
@@ -269,7 +268,7 @@ let remove_call_c cnames fmap c =
   update_funcs funcs' c
 
 let remove_call_p p =
-  let cnames = get_cnames p in
+  let cnames = Lang.get_cnames p in
   let fmap = FuncMap.mk_fmap p in
   List.map (remove_call_c cnames fmap) p
 
@@ -277,8 +276,7 @@ let rec inline_ntimes : int -> pgm -> pgm
 = fun n p ->
   let _ = assert (n>=0) in
   if n=0 then
-    if !Options.exploit then remove_call_p p
-    else p
+    p
   else
     let (changed,p') = inline_p p in
     if not changed then p'
@@ -286,5 +284,4 @@ let rec inline_ntimes : int -> pgm -> pgm
 
 let run : pgm -> pgm
 = fun p ->
-  if !Options.exploit then inline_ntimes !Options.inline_depth p
-  else inline_ntimes !Options.inline_depth p
+  inline_ntimes !Options.inline_depth p

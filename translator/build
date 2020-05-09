@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TARGET=main.native
-INCLUDE_DIRS=lib,frontend,pre,interval,verify,util,exploit,checker
+INCLUDE_DIRS=lib,frontend,pre,util
 
 function clean
 {

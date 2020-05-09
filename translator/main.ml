@@ -1,6 +1,9 @@
 open Lang
 open Translator
-open Vocab
+open Preprocess
+open MakeCfg
+open Inline
+open CallGraph
 open Options
 
 let mk_file_without_pragma tmpfname =
@@ -22,7 +25,7 @@ let compile sol tmp jname =
     if !Options.solc_ver = "0.4.24" then "solc_0.4.24" else
     if !Options.solc_ver = "0.4.25" then "solc_0.4.25" else
     if !Options.solc_ver = "0.4.26" then "solc_0.4.26" else
-    if BatString.starts_with !Options.solc_ver "0.4" then "solc" else
+    if BatString.starts_with !Options.solc_ver "0.4" then "solc_0.4.26" else
     if !Options.solc_ver = "0.5.0" then "solc_0.5.1" else (* solc_0.5.0 --ast-compact-json produces a solc error. *)
     if !Options.solc_ver = "0.5.1" then "solc_0.5.1" else
     if !Options.solc_ver = "0.5.2" then "solc_0.5.2" else
@@ -36,20 +39,27 @@ let compile sol tmp jname =
     if !Options.solc_ver = "0.5.10" then "solc_0.5.10" else
     if !Options.solc_ver = "0.5.11" then "solc_0.5.11" else
     if !Options.solc_ver = "0.5.12" then "solc_0.5.12" else
-    if !Options.solc_ver = "0.5.13" then "solc_0.5.13"
+    if !Options.solc_ver = "0.5.13" then "solc_0.5.13" else
+    if !Options.solc_ver = "0.5.14" then "solc_0.5.14" else
+    if !Options.solc_ver = "0.5.15" then "solc_0.5.15" else
+    if !Options.solc_ver = "0.5.16" then "solc_0.5.16" else
+    if !Options.solc_ver = "0.5.17" then "solc_0.5.17" else
+    if BatString.starts_with !Options.solc_ver "0.5" then "solc_0.5.17"
     else failwith "Unsupported Solidity Compiler" in
-  let exit = Sys.command (solc ^ " " ^ "--ast-compact-json " ^ sol ^ "> " ^ tmp) in
-  if exit = 0 then
-    tmp |> BatFile.lines_of |> BatEnum.skip 4 |> BatFile.write_lines jname
-  else
-    let _ = Sys.command ("rm " ^ sol) in
-    let _ = Sys.command ("rm " ^ tmp) in
-    failwith ("Compilation Failed : " ^ !Options.solc_ver)
+
+  let cmd = ref (solc ^ " " ^ "--ast-compact-json " ^ sol ^ "> " ^ tmp) in
+    if not !Options.verbose then cmd := !cmd ^ " 2>/dev/null";
+    let exit = Sys.command (!cmd) in
+      if exit = 0 then
+        tmp |> BatFile.lines_of |> BatEnum.skip 4 |> BatFile.write_lines jname
+      else
+        let _ = Sys.command ("rm " ^ sol) in
+        let _ = Sys.command ("rm " ^ tmp) in
+        failwith ("Compilation Failed : " ^ !Options.solc_ver ^ " with command [" ^ !cmd ^ "]")
 
 let set_default_inline_depth () =
   if !Options.inline_depth < 0 then
-    if !Options.exploit then Options.inline_depth := 3
-    else Options.inline_depth := 2
+    Options.inline_depth := 2
   else ()
 
 let prepare () =
@@ -79,20 +89,26 @@ let prepare () =
   let pgm = MakeCfg.run pgm in
   let pgm = Inline.run pgm in (* inlining is performed on top of an initial cfg. *)
   let pgm = CallGraph.remove_unreachable_funcs pgm in
-  (pgm, lines)
+  pgm
 
 let main () =
-  let (pgm,lines) = prepare () in
-  if !Options.il then
-    print_endline (to_string_pgm pgm) else
-  if !Options.cfg then
-    print_endline (to_string_cfg_p pgm)
+  let pgm = prepare () in
+    if !Options.outputfile = "" then
+      prerr_endline (Lang.to_string_pgm pgm)
+    else
+      let fp = open_out !Options.outputfile in
+        Printf.fprintf fp "%s" (Lang.to_string_pgm pgm);
+        print_endline ("> main - IR translation is done. (" ^ !Options.outputfile ^ ")");
+        close_out fp;
+        if !Options.cfg then
+          print_endline (Lang.to_string_cfg_p pgm)
+        else
+          ()
 
 let _ =
   let usageMsg = "./main.native -input filename" in
-  Arg.parse options activate_detector usageMsg;
-  activate_default_detector_if_unspecified ();
-  print_detector_activation_status ();
-  Printexc.record_backtrace true;
-  try main ()
-  with exc -> prerr_endline (Printexc.to_string exc); prerr_endline (Printexc.get_backtrace())
+    Arg.parse Options.options Options.activate_detector usageMsg;
+    Printexc.record_backtrace true;
+
+    try main ()
+    with exc -> prerr_endline (Printexc.to_string exc); prerr_endline (Printexc.get_backtrace())

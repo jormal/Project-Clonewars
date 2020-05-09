@@ -224,13 +224,11 @@ let convert : stmt -> cfg
   (* While (e) {s} ->
    * While (e) {s}; While (e) {s} ->
    * unroll each while-loop once. *)
-  let stmt = if !Options.exploit then double_loop stmt else stmt in
   let (n,g) = trans stmt None None (Node.entry, Lang.empty_cfg) in
   let g = add_edge n Node.exit g in
   let g = disconnect g in
   let g = remove_unreach g in
   let g = inspect_lh g in
-  let g = if !Options.exploit then unroll g else g in
   g
 
 let run : pgm -> pgm

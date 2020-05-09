@@ -1,6 +1,7 @@
 open Lang
 open Vocab
 open CallGraph
+open StructMap
 open Options
 
 (************************************)

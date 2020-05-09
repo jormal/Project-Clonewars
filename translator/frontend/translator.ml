@@ -116,7 +116,7 @@ and trans_tuple : string -> typ
 = fun str ->
   let _ = assert (BatString.exists str "tuple") in
   let str' = BatString.chop ~l:6 ~r:1 str in (*tuple(uint,,string,) => uint,,string, *)
-  let strs = BatString.nsplit str' "," in (*uint,,string, => [uint,"",string,""]*)
+  let strs = BatString.split_on_string "," str' in (*uint,,string, => [uint,"",string,""]*)
   TupleType (List.map trans_str_to_typeName strs)
 
 and trans_str_to_typeName : string -> typ
