@@ -8,11 +8,15 @@ WORK_DIR = os.path.abspath (os.getcwd ())
 
 def main ():
   try:
+    sys.stderr.write ("> Start\n")
     args = read_arg ()
-    run_translator (args)
-    print ("> Done")
+    options = read_options (args)
+    run_translator (args, options)
+    sys.stderr.write ("> Done\n")
   except Exception as ex:
-    print ("> Error: {}".format (ex.args))
+    exc_type, exc_value, exc_traceback = sys.exc_info ()
+    sys.stderr.write ("> Error: {}\n\n".format (ex))
+    traceback.print_tb (exc_traceback, file=sys.stderr)
   return None
 
 
@@ -23,6 +27,7 @@ def read_arg ():
   parser.add_argument ("-m", "--main", type=str, default="", help="name of main contract (default: bottom contract of file)")
   parser.add_argument ("-S", "--solc", type=str, default="", help="version of solidity compiler (default: pragma setting in solidity file)")
   parser.add_argument ("-v", "--version", type=str, default="latest", help="version of IR translator (default: latest)")
+  parser.add_argument ("-O", "--option", action="store_true", default=False, help="flag for input options to IR translator (default: False)")
   args = parser.parse_args ()
   args.input = os.path.join (WORK_DIR, args.input)
   if not (os.path.isfile (args.input)) or not (str (args.input).endswith (".sol")):
@@ -30,7 +35,6 @@ def read_arg ():
   args.output = os.path.join (WORK_DIR, args.output)
   args.solc = get_version (args.input) if args.solc == "" else args.solc
   return args
-
 
 def get_version (input_file):
   pragma_re = re.compile (r".*pragma solidity (.*);.*")
@@ -54,7 +58,23 @@ def get_version (input_file):
   return ver
 
 
-def run_translator (args):
+def read_options (args):
+  options = {
+    "rm_index": False
+  }
+  if args.option == True:
+    sys.stderr.write ("> Do you want to remove index of variables? (default: false) [y/N] ")
+    rm_index = input ()
+    if rm_index == "y": 
+      options["rm_index"] = True
+    elif rm_index == "N":
+      options["rm_index"] = False
+    else:
+      raise Exception("Wrong Option")
+  return options
+
+
+def run_translator (args, options):
   cmd = ["sudo", "docker", "run", "--rm", "--user", "root"]
   cmd += ["-v", "{}:/home/opam/input".format (os.path.dirname (args.input))]
   cmd += ["-v", "{}:/home/opam/output".format (os.path.dirname (args.output))]
@@ -63,10 +83,11 @@ def run_translator (args):
   cmd += ["-output", "/home/opam/output/{}".format (os.path.basename (args.output))]
   cmd += ["-main", args.main]
   cmd += ["-solc", args.solc]
+  if options["rm_index"] == True: cmd += ["-rm_index"]
   proc = subprocess.run (cmd, shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
   if os.path.basename (args.output) == "tmp":
     with open (args.output, "r") as fp:
-      sys.stderr.write (fp.read () + "\n")
+      sys.stdout.write (fp.read () + "\n")
     os.remove (args.output)
   return None
 
