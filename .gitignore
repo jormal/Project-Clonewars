@@ -1,0 +1,6 @@
+# Trash file
+.DS_Store
+
+# Build files
+_build
+main.native
