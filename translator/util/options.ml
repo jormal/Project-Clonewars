@@ -1,5 +1,6 @@
 let inputfile = ref ""
 let outputfile = ref ""
+let func_outputdir = ref ""
 let cfg = ref false
 let verbose = ref false
 let main_contract = ref ""
@@ -17,6 +18,7 @@ let options =
   [
     ("-input", (Arg.String (fun s -> inputfile := s)), "File path for input solidity program.");
     ("-output", (Arg.String (fun s -> outputfile := s)), "File path for translation output of intermediate representation.");
+    ("-func", (Arg.String (fun s -> func_outputdir := s)), "Directory path for translation outputs of IR translated functions.");
     ("-cfg", (Arg.Set cfg), "File path for print out control flow graph."); 
     ("-main", (Arg.String (fun s -> main_contract := s)), "Name of main contract to be deployed.");
     ("-solc", (Arg.String (fun s -> solc_ver := s)), "Version of specified solidity compiler. (e.g., 0.5.13)");

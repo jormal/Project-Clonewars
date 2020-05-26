@@ -91,19 +91,39 @@ let prepare () =
   let pgm = CallGraph.remove_unreachable_funcs pgm in
   pgm
 
+let print_func pgm =
+  if !Options.func_outputdir = ""
+  then ()
+  else begin
+    let _ = BatList.iter (fun (contract_name, _, _, _, func_defs, _) -> (
+      let _ = BatList.iter (fun func_def -> (
+        let (func_name,_,_,_,_) = func_def in
+        let (_, extension) = BatString.rsplit !Options.outputfile "." in
+        let filename = !Options.func_outputdir ^ contract_name ^ "_" ^ func_name ^ "." ^ extension in
+        let fp = open_out filename in
+        let _ = Printf.fprintf fp "%s" (Lang.to_string_func func_def) in
+        let _ = close_out fp in
+        ()
+      )) func_defs in
+      ()
+    )) pgm in
+    ()
+  end
+
 let main () =
   let pgm = prepare () in
-    if !Options.outputfile = "" then
-      prerr_endline (Lang.to_string_pgm pgm)
-    else
-      let fp = open_out !Options.outputfile in
-        Printf.fprintf fp "%s" (Lang.to_string_pgm pgm);
-        print_endline ("> main - IR translation is done. (" ^ !Options.outputfile ^ ")");
-        close_out fp;
-        if !Options.cfg then
-          print_endline (Lang.to_string_cfg_p pgm)
-        else
-          ()
+  let _ = print_func pgm in
+  if !Options.outputfile = "" then
+    prerr_endline (Lang.to_string_pgm pgm)
+  else
+    let fp = open_out !Options.outputfile in
+      Printf.fprintf fp "%s" (Lang.to_string_pgm pgm);
+      print_endline ("> main - IR translation is done. (" ^ !Options.outputfile ^ ")");
+      close_out fp;
+      if !Options.cfg then
+        print_endline (Lang.to_string_cfg_p pgm)
+      else
+        ()
 
 let _ =
   let usageMsg = "./main.native -input filename" in
