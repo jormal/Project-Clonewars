@@ -83,6 +83,10 @@ def run_translator (args, options):
   cmd += ["-output", "/home/opam/output/{}".format (os.path.basename (args.output))]
   cmd += ["-main", args.main]
   cmd += ["-solc", args.solc]
+  if os.path.basename (args.output) != "tmp":
+    func_dir = os.path.basename (args.output).split (".")[0] + "_func"
+    os.makedirs (os.path.join (os.path.dirname (args.output), func_dir), exist_ok=True)
+    cmd += ["-func", "/home/opam/output/{}/".format (func_dir)]
   if options["rm_index"] == True: cmd += ["-rm_index"]
   proc = subprocess.run (cmd, shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
   if os.path.basename (args.output) == "tmp":
