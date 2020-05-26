@@ -4,3 +4,6 @@
 # Build files
 _build
 main.native
+
+# Log files
+deploy_log
